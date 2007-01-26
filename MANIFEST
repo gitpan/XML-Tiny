@@ -1,0 +1,16 @@
+lib/XML/Tiny.pm
+Makefile.PL
+README
+MANIFEST
+t/test_functions
+t/00-file-handling.t
+t/01-real-world-xml.t
+t/empty.xml
+t/minimal.xml
+t/amazon.xml
+t/rss.xml
+t/amazon-parsed-with-xml-parser-easytree
+t/rss-parsed-with-xml-parser-easytree
+META.yml                                 Module meta-data (added by MakeMaker)
+t/02-oddballs.t
+t/two-docs.xml
