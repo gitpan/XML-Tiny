@@ -1,3 +1,4 @@
+CHANGES
 lib/XML/Tiny.pm
 Makefile.PL
 README
@@ -14,3 +15,6 @@ t/rss-parsed-with-xml-parser-easytree
 META.yml                                 Module meta-data (added by MakeMaker)
 t/02-oddballs.t
 t/two-docs.xml
+t/doc-and-a-bit.xml
+t/text-only.xml
+t/03-attribs.t

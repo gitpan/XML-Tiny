@@ -1,0 +1,4 @@
+1.01    2007-01-29    Fixed for 5.004_05, with thanks to David Romano;
+                      Added support for passing a string of XML, also at
+                        David Romano's suggestion;
+                      Added basic support for attributes, thanks to Matt Knecht

@@ -6,7 +6,7 @@ require Exporter;
 
 use vars qw($VERSION @EXPORT_OK @ISA);
 
-$VERSION = '1.0';
+$VERSION = '1.01';
 @EXPORT_OK = qw(parsefile);
 @ISA = qw(Exporter);
 
@@ -39,6 +39,15 @@ This takes exactly one parameter.  That may be:
 
 in which case the file is read and parsed;
 
+=item a string of XML
+
+in which case it is read and parsed.  How do we tell if we've got a string
+or a filename?  Simple.  If it begins with C<_TINY_XML_STRING_> then it's
+a string.  That prefix is, of course, ignored when it comes to actually
+parsing the data.  This is intended primarily for use by wrappers which
+want to retain compatibility with Ye Aunciente Perl.  Normal users who want
+to pass in a string would be expected to use L<IO::Scalar>.
+
 =item a glob-ref or IO::Handle object
 
 in which case again, the file is read and parsed.
@@ -59,11 +68,16 @@ sub parsefile {
     my($arg, $file) = (+shift, '');
     local $/; # sluuuuurp
 
-    if(ref($arg) eq '') { # we were passed a filename
-        open(FH, $arg) || die(__PACKAGE__."::parsefile: Can't open $arg\n");
-        $file = <FH>;
-        close(FH);
+    if(ref($arg) eq '') { # we were passed a filename or a string
+        if($arg =~ /^_TINY_XML_STRING_(.*)/) { # it's a string
+            $file = $1;
+        } else {
+            open(FH, $arg) || die(__PACKAGE__."::parsefile: Can't open $arg\n");
+            $file = <FH>;
+            close(FH);
+        }
     } else { $file = <$arg>; }
+    die("No elements\n") if (!defined($file) || $file =~ /^\s*$/);
     # strip leading/trailing whitespace and comments (which don't nest - phew!)
     $file =~ s/^\s+|<!--.*?-->|\s+$//g;
     
@@ -76,26 +90,46 @@ sub parsefile {
 	    die("Not well-formed\n\tat $token\n") if($elem->{name} ne $1);
 	    $elem = delete $elem->{parent};
         } elsif($token =~ m!<[^>]+>!) {   # open tag
-	    $token =~ /<(\S*)(.*)>/s; # my $attribs = $2;
-	    $elem = { content => [], name => $1, type => 'e', parent => $elem };
+	    $token =~ /<(\S*)(.*)>/s;
+            my $tagname = $1;
+            # this makes the baby jesus cry
+            my $attrib  = { $2 =~ /(\S+)\s*=\s*"([^"]*?)"/sg };
+            fixentities(values %{$attrib});
+	    $elem = {
+                content => [],
+                name => $tagname,
+                type => 'e',
+                attrib => $attrib,
+                parent => $elem
+            };
 	    push @{$elem->{parent}->{content}}, $elem;
 	    # now handle self-closing tags
 	    $elem = delete $elem->{parent} if($token =~ /\/>$/);
         } else {                          # ordinary content
-	    # # $token =~ s/&#(\d+);/chr($1)/eg;
-	    # # $token =~ s/&#x([A-F0-9]+);/chr(hex($1))/ieg;
-	    $token =~ s/&lt;/</g;   $token =~ s/&gt;/>/g;
-	    $token =~ s/&quot;/"/g; $token =~ s/&apos;/'/g;
-	    # this translation *must* come last
-	    $token =~ s/&amp;/&/g;
+            fixentities($token);
             push @{$elem->{content}}, { content => $token, type => 't' };
         }
     }
-    die("Junk after end of document\n") if(exists($elem->{content}->[1]));
-    die("No elements\n") if(!exists($elem->{content}->[0]));
+    die("Junk after end of document\n") if($#{$elem->{content}} > 0);
+    die("No elements\n") if(
+        $#{$elem->{content}} == -1 || $elem->{content}->[0]->{type} ne 'e'
+    );
     return $elem->{content};
 }
 
+# AWOOGA!  this edits values in place - pass by reference!
+sub fixentities {
+    foreach(@_) {
+        # # $_ =~ s/&#(\d+);/chr($1)/eg;
+        # # $_ =~ s/&#x([A-F0-9]+);/chr(hex($1))/ieg;
+        $_ =~ s/&lt;/</g;
+        $_ =~ s/&gt;/>/g;
+        $_ =~ s/&quot;/"/g;
+        $_ =~ s/&apos;/'/g;
+        # this translation *must* come last
+        $_ =~ s/&amp;/&/g;
+    }
+}
 =head1 COMPATIBILITY
 
 =over 4
@@ -119,8 +153,7 @@ you would say:
 
 Any document that can be parsed like that using XML::Tiny should
 produce identical results if you use the above example of how to use
-L<XML::Parser::EasyTree>, with the exception that there is no support
-for attributes, and hence no 'attrib' key in hashes.
+L<XML::Parser::EasyTree>.
 
 If you find a document where that is not the case, please report it as
 a bug.
@@ -144,10 +177,17 @@ handled incorrectly:
 
 =over 4
 
-=item CDATA and Attributes
+=item CDATA
 
-Not handled at all and ignored.  However, a > character in CDATA or an
-attribute will make the primitive parser think the document is malformed.
+Not handled at all and ignored.  However, a > character in CDATA
+will make the primitive parser think the document is malformed.
+
+=item Attributes
+
+Handled, but the presence of a > character in an attribute will make the
+parser think the document is malformed.  For now, attribute values must
+be "double-quoted".  To embed a double-quote in an attribute value, use
+C<&quot;>.
 
 =item DTDs and Schemas
 
@@ -200,6 +240,12 @@ L<http://beta.nntp.perl.org/group/perl.datetime/2007/01/msg6584.html>
 =head1 AUTHOR
 
 David Cantrell E<lt>F<david@cantrell.org.uk>E<gt>
+
+Thanks to David Romano for some compatibility patches for Ye Aunciente Perl;
+
+Thanks to Matt Knecht and David Romano for prodding me to support attributes,
+and to Matt for providing code to implement it in a quick n dirty minimal
+kind of way.
 
 =head1 COPYRIGHT and LICENCE
 

@@ -66,6 +66,4 @@ sub strip_attribs {
     }
 }
 
-sub END { print "1..$counter\n"; }
-
 1;
