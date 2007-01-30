@@ -2,7 +2,7 @@ use XML::Tiny qw(parsefile);
 
 use strict;
 require "t/test_functions";
-my $tests = $] >= 5.005003 ? 6 : 5;
+my $tests = $] >= 5.006 ? 6 : 5;
 print "1..$tests\n";
 
 $^W = 1;

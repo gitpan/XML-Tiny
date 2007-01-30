@@ -1,4 +1,9 @@
+1.02    2007-01-30    More 5.004 compatibility fixes;
+                      Better support for attributes, again thanks to Matt
+                        Knecht
+
 1.01    2007-01-29    Fixed for 5.004_05, with thanks to David Romano;
                       Added support for passing a string of XML, also at
                         David Romano's suggestion;
-                      Added basic support for attributes, thanks to Matt Knecht
+                      Added basic support for attributes, thanks to Matt
+                        Knecht

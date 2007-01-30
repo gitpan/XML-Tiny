@@ -57,11 +57,12 @@ sub _is_deeply_hashes {
 # strips the 'attrib' key out of any hashes in a structure
 sub strip_attribs {
     return unless(ref($_[0]));
-    if(ref($_[0]) eq 'ARRAY') { strip_attribs($_) foreach (@{$_[0]}) }
-     elsif(ref($_[0]) eq 'HASH') {
+    if(ref($_[0]) eq 'ARRAY') {
+        foreach (@{$_[0]}) { strip_attribs($_) }
+    } elsif(ref($_[0]) eq 'HASH') {
         delete $_[0]->{attrib};
         if($_[0]->{type} eq 'e') {
-	    strip_attribs($_) foreach (@{$_[0]->{content}});
+	    foreach (@{$_[0]->{content}}) { strip_attribs($_) }
 	}
     }
 }

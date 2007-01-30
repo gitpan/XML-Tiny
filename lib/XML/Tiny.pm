@@ -6,7 +6,7 @@ require Exporter;
 
 use vars qw($VERSION @EXPORT_OK @ISA);
 
-$VERSION = '1.01';
+$VERSION = '1.02';
 @EXPORT_OK = qw(parsefile);
 @ISA = qw(Exporter);
 
@@ -15,6 +15,10 @@ $^W = 1;    # can't use warnings as that's a 5.6-ism
 =head1 NAME
 
 XML::Tiny - simple lightweight parser for a subset of XML
+
+=head1 DESCRIPTION
+
+XML::Tiny is a simple lightweight parser for a subset of XML
 
 =head1 SYNOPSIS
 
@@ -42,7 +46,7 @@ in which case the file is read and parsed;
 =item a string of XML
 
 in which case it is read and parsed.  How do we tell if we've got a string
-or a filename?  Simple.  If it begins with C<_TINY_XML_STRING_> then it's
+or a filename?  If it begins with C<_TINY_XML_STRING_> then it's
 a string.  That prefix is, of course, ignored when it comes to actually
 parsing the data.  This is intended primarily for use by wrappers which
 want to retain compatibility with Ye Aunciente Perl.  Normal users who want
@@ -90,11 +94,17 @@ sub parsefile {
 	    die("Not well-formed\n\tat $token\n") if($elem->{name} ne $1);
 	    $elem = delete $elem->{parent};
         } elsif($token =~ m!<[^>]+>!) {   # open tag
-	    $token =~ /<(\S*)(.*)>/s;
-            my $tagname = $1;
+	    my($tagname, $attribs_raw) = ($token =~ /<(\S*)(.*)>/s);
             # this makes the baby jesus cry
-            my $attrib  = { $2 =~ /(\S+)\s*=\s*"([^"]*?)"/sg };
-            fixentities(values %{$attrib});
+	    # first we pluck out double-quoted attribs,
+	    # then single-quoted.
+	    my $attrib  = {
+	        $attribs_raw =~ /(\S+)\s*=\s*"([^"]*?)"/sg,
+	        $attribs_raw =~ /(\S+)\s*=\s*'([^']*?)'/sg
+	    };
+	    foreach my $key (keys %{$attrib}) {
+	        $attrib->{$key} = fixentities($attrib->{$key})
+            }
 	    $elem = {
                 content => [],
                 name => $tagname,
@@ -106,7 +116,7 @@ sub parsefile {
 	    # now handle self-closing tags
 	    $elem = delete $elem->{parent} if($token =~ /\/>$/);
         } else {                          # ordinary content
-            fixentities($token);
+            $token = fixentities($token);
             push @{$elem->{content}}, { content => $token, type => 't' };
         }
     }
@@ -117,19 +127,19 @@ sub parsefile {
     return $elem->{content};
 }
 
-# AWOOGA!  this edits values in place - pass by reference!
 sub fixentities {
-    foreach(@_) {
-        # # $_ =~ s/&#(\d+);/chr($1)/eg;
-        # # $_ =~ s/&#x([A-F0-9]+);/chr(hex($1))/ieg;
-        $_ =~ s/&lt;/</g;
-        $_ =~ s/&gt;/>/g;
-        $_ =~ s/&quot;/"/g;
-        $_ =~ s/&apos;/'/g;
-        # this translation *must* come last
-        $_ =~ s/&amp;/&/g;
-    }
+    my $thingy = shift;
+    # # $thingy =~ s/&#(\d+);/chr($1)/eg;
+    # # $thingy =~ s/&#x([A-F0-9]+);/chr(hex($1))/ieg;
+    $thingy =~ s/&lt;/</g;
+    $thingy =~ s/&gt;/>/g;
+    $thingy =~ s/&quot;/"/g;
+    $thingy =~ s/&apos;/'/g;
+    # this translation *must* come last
+    $thingy =~ s/&amp;/&/g;
+    $thingy;
 }
+
 =head1 COMPATIBILITY
 
 =over 4
@@ -158,10 +168,10 @@ L<XML::Parser::EasyTree>.
 If you find a document where that is not the case, please report it as
 a bug.
 
-=item With perl 5.004_05
+=item With perl 5.004
 
 The module is intended to be fully compatible with every version of perl
-back to and including 5.004_05, and may be compatible with even older
+back to and including 5.004, and may be compatible with even older
 versions of perl 5.
 
 The lack of Unicode and friends in older perls means that XML::Tiny
@@ -185,9 +195,8 @@ will make the primitive parser think the document is malformed.
 =item Attributes
 
 Handled, but the presence of a > character in an attribute will make the
-parser think the document is malformed.  For now, attribute values must
-be "double-quoted".  To embed a double-quote in an attribute value, use
-C<&quot;>.
+parser think the document is malformed.  Attribute values may be either
+double- or single- quoted.
 
 =item DTDs and Schemas
 
@@ -213,6 +222,38 @@ We do not guarantee to correctly handle leading and trailing whitespace.
 =back
 
 =back
+
+=head1 PHILOSOPHY and JUSTIFICATION
+
+While feedback from real users about this module has been uniformly
+positive and helpful, some people seem to take issue with this module
+because it doesn't implement every last jot and tittle of the XML
+standard and merely implements a useful subset.  A very useful subset,
+as it happens, which can cope with common light-weight XML-ish tasks
+such as parsing the results of queries to the Amazon Web Services.
+Many, perhaps most, users of XML do not in fact need a full implementation
+of the standard, and are understandably reluctant to install large complex
+pieces of software which have many dependencies.  In fact, when they
+realise what installing and using a full implementation entails, they
+quite often don't *want* it.  Another class of users, people
+distributing applications, often can not rely on users being able to
+install modules from the CPAN, or even having tools like make or a shell
+available.  XML::Tiny exists for those people.  Those people are *grateful*
+that I have omitted rarely-used functionality in the interests of giving
+them the bits that they need.
+
+There has also been criticism of the module's name.  Apparently, if it
+doesn't implement those jots and tittles I shouldn't defile the Sacred
+Trigraph 'XML'.  Obviously, I do not subscribe to this view.  At no point
+does the module even attempt to claim that it supports everything.  It is
+perfectly clear to anyone who reads the documentation that it merely handles
+a subset, and that if you need a full implementation you should look
+elsewhere.  It does, however, contrary to some of the more frenzied of its
+detractors, indeed implement a subset and not mere "tag soup" - unless XML
+itself is mere "tag soup".  This is quite obvious when you look
+at what it can do.  It can, for example, understand perfectly the subset
+of XML used by the lovely people at Amazon to list what books are on my
+wishlist.  If it couldn't do that, it wouldn't pass its own tests.
 
 =head1 BUGS and FEEDBACK
 
