@@ -6,7 +6,7 @@ require Exporter;
 
 use vars qw($VERSION @EXPORT_OK @ISA);
 
-$VERSION = '1.02';
+$VERSION = '1.03';
 @EXPORT_OK = qw(parsefile);
 @ISA = qw(Exporter);
 
@@ -69,7 +69,7 @@ data.
 =cut
 
 sub parsefile {
-    my($arg, $file) = (+shift, '');
+    my($arg, $file, $elem) = (+shift, '', { content => [] });
     local $/; # sluuuuurp
 
     if(ref($arg) eq '') { # we were passed a filename or a string
@@ -82,12 +82,20 @@ sub parsefile {
         }
     } else { $file = <$arg>; }
     die("No elements\n") if (!defined($file) || $file =~ /^\s*$/);
+
     # strip leading/trailing whitespace and comments (which don't nest - phew!)
     $file =~ s/^\s+|<!--.*?-->|\s+$//g;
     
-    my $elem = { content => [] };
+    # turn CDATA into PCDATA
+    $file =~ s#<!\[CDATA\[(.*?)]]>#
+        $_ = $1;
+        s/&/&amp;/g;
+        s/</&lt;/g;
+        s/>/&gt;/g;
+        $_;
+    #egs;
 
-    # ignore empty tokens/whitespace tokens/processing instrs/entities/CDATA
+    # ignore empty tokens/whitespace tokens/processing instrs/entities
     foreach my $token (grep { length && $_ !~ /^\s+$/ && $_ !~ /<[!?]/ }
       split(/(<[^>]+>)/, $file)) {
         if($token =~ m!</([^>]+)>!) {     # close tag
@@ -95,12 +103,9 @@ sub parsefile {
 	    $elem = delete $elem->{parent};
         } elsif($token =~ m!<[^>]+>!) {   # open tag
 	    my($tagname, $attribs_raw) = ($token =~ /<(\S*)(.*)>/s);
-            # this makes the baby jesus cry
-	    # first we pluck out double-quoted attribs,
-	    # then single-quoted.
 	    my $attrib  = {
-	        $attribs_raw =~ /(\S+)\s*=\s*"([^"]*?)"/sg,
-	        $attribs_raw =~ /(\S+)\s*=\s*'([^']*?)'/sg
+	        $attribs_raw =~ /(\S+)\s*=\s*"([^"]*?)"/sg, # double-quoted
+	        $attribs_raw =~ /(\S+)\s*=\s*'([^']*?)'/sg  # and single-quoted
 	    };
 	    foreach my $key (keys %{$attrib}) {
 	        $attrib->{$key} = fixentities($attrib->{$key})
@@ -187,11 +192,6 @@ handled incorrectly:
 
 =over 4
 
-=item CDATA
-
-Not handled at all and ignored.  However, a > character in CDATA
-will make the primitive parser think the document is malformed.
-
 =item Attributes
 
 Handled, but the presence of a > character in an attribute will make the
@@ -209,7 +209,7 @@ C<&65;> will come through as the four characters C<&>, C<6>, C<5> and C<;>.
 Naked ampersand characters are allowed.
 
 C<&amp;>, C<&apos;>, C<&gt;>, C<&lt;> and C<&quot;> are, however,
-supported.
+supported because the spec requires it.
 
 =item Processing instructions (ie <?...>)
 
@@ -238,22 +238,7 @@ realise what installing and using a full implementation entails, they
 quite often don't *want* it.  Another class of users, people
 distributing applications, often can not rely on users being able to
 install modules from the CPAN, or even having tools like make or a shell
-available.  XML::Tiny exists for those people.  Those people are *grateful*
-that I have omitted rarely-used functionality in the interests of giving
-them the bits that they need.
-
-There has also been criticism of the module's name.  Apparently, if it
-doesn't implement those jots and tittles I shouldn't defile the Sacred
-Trigraph 'XML'.  Obviously, I do not subscribe to this view.  At no point
-does the module even attempt to claim that it supports everything.  It is
-perfectly clear to anyone who reads the documentation that it merely handles
-a subset, and that if you need a full implementation you should look
-elsewhere.  It does, however, contrary to some of the more frenzied of its
-detractors, indeed implement a subset and not mere "tag soup" - unless XML
-itself is mere "tag soup".  This is quite obvious when you look
-at what it can do.  It can, for example, understand perfectly the subset
-of XML used by the lovely people at Amazon to list what books are on my
-wishlist.  If it couldn't do that, it wouldn't pass its own tests.
+available.  XML::Tiny exists for those people.
 
 =head1 BUGS and FEEDBACK
 
@@ -262,9 +247,7 @@ Bug reports should be made using L<http://rt.cpan.org/> or by email,
 and should include the smallest possible chunk of code, along with
 any necessary XML data, which demonstrates the bug.  Ideally, this
 will be in the form of a file which I can drop in to the module's
-test suite.  Please note that such files must work in perl 5.004_05,
-and that mishandling of funny character sets, even on later versions
-of perl, will not be considered a bug.
+test suite.  Please note that such files must work in perl 5.004_05.
 
 If you are feeling particularly generous you can encourage me in my
 open source endeavours by buying me something from my wishlist:
@@ -272,11 +255,19 @@ open source endeavours by buying me something from my wishlist:
 
 =head1 SEE ALSO
 
+=over 4
+
+=item For more capable XML parsers:
+
 L<XML::Parser>
 
 L<XML::Parser::EasyTree>
 
+=item The requirements for a Tiny module
+
 L<http://beta.nntp.perl.org/group/perl.datetime/2007/01/msg6584.html>
+
+=back
 
 =head1 AUTHOR
 
