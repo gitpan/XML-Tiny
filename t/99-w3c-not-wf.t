@@ -21,6 +21,6 @@ foreach my $testdir (map { "t/w3c/not-wf/$_" } qw(ext-sa not-sa sa)) {
 print "1..".@testfiles."\n";
 
 foreach my $testfile (@testfiles) {
-    eval "parsefile('$testfile')";
+    eval "parsefile('$testfile', fatal_declarations => 1, strict_entity_parsing => 1)";
     ok($@, "w3c test $testfile");
 }

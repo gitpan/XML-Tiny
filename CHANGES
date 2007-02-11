@@ -1,3 +1,13 @@
+1.04    2007-XXXXX    Optionally reject documents with ENTITY and DOCTYPE
+                        declarations;
+                      Optionally pass entities through without decoding 'em;
+                      Optionally get all bondage-and-discpline about entities;
+                      More careful pruning out of processing instructions;
+                      Reject a few more small well-formedness violations;
+                      Doco updates;
+                      Attributes can now contain the > character;
+                      Numeric entities now supported.
+
 1.03    2007-02-03    Added CDATA support;
                       Removed some of the more inflammatory comments in the
                         docs :-)
