@@ -6,11 +6,12 @@ require Exporter;
 
 use vars qw($VERSION @EXPORT_OK @ISA);
 
-$VERSION = '1.04';
+$VERSION = '1.05';
 @EXPORT_OK = qw(parsefile);
 @ISA = qw(Exporter);
 
-$^W = 1;    # can't use warnings as that's a 5.6-ism
+# localising prevents the warningness leaking out of this module
+local $^W = 1;    # can't use warnings as that's a 5.6-ism
 
 =head1 NAME
 

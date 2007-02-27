@@ -1,4 +1,8 @@
-1.04    2007-XXXXX    Optionally reject documents with ENTITY and DOCTYPE
+1.05    2007-02-27    Localised warnings;
+                      Better testing of filehandles
+                        (both thanks to SAPER)
+
+1.04    2007-02-11    Optionally reject documents with ENTITY and DOCTYPE
                         declarations;
                       Optionally pass entities through without decoding 'em;
                       Optionally get all bondage-and-discpline about entities;

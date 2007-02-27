@@ -1,9 +1,9 @@
+use FileHandle;
 use XML::Tiny qw(parsefile);
 
 use strict;
 require "t/test_functions";
-my $tests = $] >= 5.006 ? 6 : 5;
-print "1..$tests\n";
+print "1..6\n";
 
 $^W = 1;
 
@@ -30,15 +30,14 @@ is_deeply(
 );
 close(FOO);
 
-if($] >= 5.005003) { # lexical filehandles! woo!
-    open(my $foo, 't/minimal.xml');
-    is_deeply(
-        parsefile($foo),
-	[{ 'name' => 'x', 'content' => [], 'type' => 'e', attrib => {} }],
-	"Passing a lexical filehandle works"
-    );
-    close($foo);
-}
+my $foo = FileHandle->new;
+open($foo, 't/minimal.xml');
+is_deeply(
+    parsefile($foo),
+    [{ 'name' => 'x', 'content' => [], 'type' => 'e', attrib => {} }],
+    "Passing a lexical filehandle works"
+);
+close($foo);
 
 is_deeply(
     parsefile('_TINY_XML_STRING_<x></x>'),
