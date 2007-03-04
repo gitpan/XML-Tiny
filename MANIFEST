@@ -237,3 +237,5 @@ t/w3c/not-wf/sa/185.xml
 t/w3c/not-wf/sa/186.xml
 t/w3c/not-wf/sa/null.ent
 t/w3c/not-wf/sa/094.xml~
+t/50-trailing-whitespace.t
+t/trailing-whitespace-in-tags.xml

@@ -6,7 +6,7 @@ require Exporter;
 
 use vars qw($VERSION @EXPORT_OK @ISA);
 
-$VERSION = '1.05';
+$VERSION = '1.06';
 @EXPORT_OK = qw(parsefile);
 @ISA = qw(Exporter);
 
@@ -221,7 +221,7 @@ sub parsefile {
         } elsif($token =~ m!^</($regexps{name})\s*>!i) {     # close tag
 	    die("Not well-formed\n\tat $token\n") if($elem->{name} ne $1);
 	    $elem = delete $elem->{parent};
-        } elsif($token =~ /^<$regexps{name}(\s[^>]+)?>/is) {   # open tag
+        } elsif($token =~ /^<$regexps{name}(\s[^>]*)?>/is) {   # open tag
 	    my($tagname, $attribs_raw) = ($token =~ m!<(\S*)(.*?)/?>!s);
 	    # first make attribs into a list so we can spot duplicate keys
 	    my $attrib  = [

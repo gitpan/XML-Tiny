@@ -1,3 +1,7 @@
+1.06    2007-03-04    Fixed bug in open tags with no attributes and a single
+                        whitespace char between the name and the >.  Thanks
+                        to Gary Ansok.
+
 1.05    2007-02-27    Localised warnings;
                       Better testing of filehandles
                         (both thanks to SAPER)
