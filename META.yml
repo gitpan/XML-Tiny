@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:                XML-Tiny
-version:             1.07
+version:             1.08
 abstract:            ~
 license:             ~
 generated_by:        ExtUtils::MakeMaker version 6.32
